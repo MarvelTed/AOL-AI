@@ -9,7 +9,7 @@ import { GlassPanel } from '@/components/ui/GlassPanel'
 import { AtmosphericOrb } from '@/components/ui/AtmosphericOrb'
 import { TextGradient } from '@/components/ui/TextGradient'
 import { useMotion } from '@/components/providers/MotionProvider'
-import { getSkins, fetchSkins } from '@/lib/api'
+import { fetchSkins } from '@/lib/api'
 import type { SkinOption } from '@/lib/cs2-types'
 
 type Category = 'all' | SkinOption['category']
@@ -95,12 +95,16 @@ function SkinCard({ skin }: { skin: SkinOption }) {
 
 export default function PredictorPage() {
   const { shouldAnimate }             = useMotion()
-  const [skins, setSkins]             = useState<SkinOption[]>(getSkins())
+  const [skins, setSkins]             = useState<SkinOption[]>([])
   const [searchQuery, setSearchQuery] = useState('')
   const [category, setCategory]       = useState<Category>('all')
 
   useEffect(() => {
-    fetchSkins().then(setSkins).catch(() => {})
+    fetchSkins()
+      .then(setSkins)
+      .catch((error) => {
+        console.error('Failed to load skins', error)
+      })
   }, [])
 
   const counts = useMemo<Record<Category, number>>(() => ({

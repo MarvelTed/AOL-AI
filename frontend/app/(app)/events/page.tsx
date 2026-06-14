@@ -9,7 +9,7 @@ import { AtmosphericOrb } from '@/components/ui/AtmosphericOrb'
 import { TextGradient } from '@/components/ui/TextGradient'
 import { EventTimeline } from '@/components/cs2/EventTimeline'
 import { useMotion } from '@/components/providers/MotionProvider'
-import { getMarketEvents, fetchMarketEvents } from '@/lib/api'
+import { fetchMarketEvents } from '@/lib/api'
 import type { MarketEvent } from '@/lib/cs2-types'
 
 type ImpactFilter = 'all' | MarketEvent['impact']
@@ -33,10 +33,14 @@ const itemVariants = {
 export default function EventsPage() {
   const { shouldAnimate }   = useMotion()
   const [filter, setFilter] = useState<ImpactFilter>('all')
-  const [events, setEvents] = useState<MarketEvent[]>(getMarketEvents())
+  const [events, setEvents] = useState<MarketEvent[]>([])
 
   useEffect(() => {
-    fetchMarketEvents().then(setEvents).catch(() => {})
+    fetchMarketEvents()
+      .then(setEvents)
+      .catch((error) => {
+        console.error('Failed to load market events', error)
+      })
   }, [])
 
   const impactCounts = {

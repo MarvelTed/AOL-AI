@@ -8,7 +8,7 @@ import { AtmosphericOrb } from '@/components/ui/AtmosphericOrb'
 import { TextGradient } from '@/components/ui/TextGradient'
 import { KeywordTracker } from '@/components/cs2/KeywordTracker'
 import { useMotion } from '@/components/providers/MotionProvider'
-import { getNewsKeywords, fetchNewsKeywords } from '@/lib/api'
+import { fetchNewsKeywords } from '@/lib/api'
 import type { NewsKeyword } from '@/lib/cs2-types'
 
 const containerVariants = {
@@ -22,10 +22,14 @@ const itemVariants = {
 
 export default function KeywordsPage() {
   const { shouldAnimate }       = useMotion()
-  const [keywords, setKeywords] = useState<NewsKeyword[]>(getNewsKeywords())
+  const [keywords, setKeywords] = useState<NewsKeyword[]>([])
 
   useEffect(() => {
-    fetchNewsKeywords().then(setKeywords).catch(() => {})
+    fetchNewsKeywords()
+      .then(setKeywords)
+      .catch((error) => {
+        console.error('Failed to load news keywords', error)
+      })
   }, [])
 
   const totalMentions = keywords.reduce((s, k) => s + k.count, 0)

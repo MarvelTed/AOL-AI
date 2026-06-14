@@ -13,7 +13,6 @@ import { EventTimeline } from '@/components/cs2/EventTimeline'
 import { KeywordTracker } from '@/components/cs2/KeywordTracker'
 import { useMotion } from '@/components/providers/MotionProvider'
 import {
-  getSkins, getPlayerCount, getMarketEvents, getNewsKeywords,
   fetchSkins, fetchPlayerCount, fetchMarketEvents, fetchNewsKeywords,
 } from '@/lib/api'
 import type { SkinOption, PlayerCountData, MarketEvent, NewsKeyword } from '@/lib/cs2-types'
@@ -36,23 +35,44 @@ const marketStats = [
 export default function DashboardPage() {
   const { shouldAnimate } = useMotion()
 
-  const [skins,       setSkins]       = useState<SkinOption[]>(getSkins())
-  const [playerCount, setPlayerCount] = useState<PlayerCountData>(getPlayerCount())
-  const [events,      setEvents]      = useState<MarketEvent[]>(getMarketEvents())
-  const [keywords,    setKeywords]    = useState<NewsKeyword[]>(getNewsKeywords())
+  const [skins,       setSkins]       = useState<SkinOption[]>([])
+  const [playerCount, setPlayerCount] = useState<PlayerCountData>({
+    current: 0,
+    peak24h: 0,
+    peak30d: 0,
+    change24hPct: 0,
+    trend: 'stable',
+    history: [],
+  })
+  const [events,      setEvents]      = useState<MarketEvent[]>([])
+  const [keywords,    setKeywords]    = useState<NewsKeyword[]>([])
 
   useEffect(() => {
-    Promise.all([
+    Promise.allSettled([
       fetchSkins(),
       fetchPlayerCount(),
       fetchMarketEvents(),
       fetchNewsKeywords(),
-    ]).then(([s, p, e, k]) => {
-      setSkins(s)
-      setPlayerCount(p)
-      setEvents(e)
-      setKeywords(k)
-    }).catch(() => {/* silently keep mock data */})
+    ]).then(([skinsResult, playersResult, eventsResult, keywordsResult]) => {
+      if (skinsResult.status === 'fulfilled') setSkins(skinsResult.value)
+      if (playersResult.status === 'fulfilled') setPlayerCount(playersResult.value)
+      if (eventsResult.status === 'fulfilled') setEvents(eventsResult.value)
+      if (keywordsResult.status === 'fulfilled') setKeywords(keywordsResult.value)
+
+      if (
+        skinsResult.status === 'rejected' ||
+        playersResult.status === 'rejected' ||
+        eventsResult.status === 'rejected' ||
+        keywordsResult.status === 'rejected'
+      ) {
+        console.error('Dashboard data fetch failed', {
+          skinsResult,
+          playersResult,
+          eventsResult,
+          keywordsResult,
+        })
+      }
+    })
   }, [])
 
   const defaultSkin = skins[0]
