@@ -1,6 +1,6 @@
 'use client'
 
-import { useState, useEffect, useMemo, use } from 'react'
+import { use, useState, useEffect, useMemo } from 'react'
 import { motion } from 'framer-motion'
 import { TrendingUp, TrendingDown, ChevronLeft } from 'lucide-react'
 import Link from 'next/link'
@@ -10,7 +10,7 @@ import { AtmosphericOrb } from '@/components/ui/AtmosphericOrb'
 import { PricePredictorChart } from '@/components/cs2/PricePredictorChart'
 import { AiAnalysisCard } from '@/components/cs2/AiAnalysisCard'
 import { useMotion } from '@/components/providers/MotionProvider'
-import { getSkinById, fetchSkinById } from '@/lib/api'
+import { fetchSkinById } from '@/lib/api'
 import type { SkinOption, SkinPricePoint } from '@/lib/cs2-types'
 
 type Timeframe = '1W' | '1M' | '3M'
@@ -52,17 +52,23 @@ interface Props {
 }
 
 export default function SkinDetailPage({ params }: Props) {
-  const { id }    = use(params)
+  const { id } = use(params)
   const { shouldAnimate } = useMotion()
   const [timeframe, setTimeframe] = useState<Timeframe>('3M')
 
   const decodedId = decodeURIComponent(id)
-  const [skin, setSkin] = useState<SkinOption | undefined>(
-    getSkinById(id) ?? getSkinById(decodedId)
-  )
+  const [skin, setSkin] = useState<SkinOption | null>(null)
+  const [isLoading, setIsLoading] = useState(true)
 
   useEffect(() => {
-    fetchSkinById(decodedId).then(setSkin).catch(() => {})
+    setIsLoading(true)
+    fetchSkinById(decodedId)
+      .then((result) => setSkin(result ?? null))
+      .catch((error) => {
+        console.error('Failed to load skin detail', error)
+        setSkin(null)
+      })
+      .finally(() => setIsLoading(false))
   }, [decodedId])
 
   const chartData = useMemo(
