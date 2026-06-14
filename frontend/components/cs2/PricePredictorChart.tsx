@@ -67,7 +67,7 @@ export function PricePredictorChart({ data, height = 280, currency = '$' }: Pric
 
   // Dynamic month ticks from the actual data range
   const monthTicks = (() => {
-    if (!data.length) return []
+    if (!data || !data.length) return []
     const start = new Date(data[0].date)
     const end   = new Date(data[data.length - 1].date)
     const ticks: string[] = []
@@ -79,9 +79,9 @@ export function PricePredictorChart({ data, height = 280, currency = '$' }: Pric
     return ticks
   })()
 
-  const prices    = data.map((d) => d.price).filter((v): v is number => v !== null)
-  const prophets  = data.map((d) => d.predicted).filter((v): v is number => v !== null)
-  const lstms     = data.map((d) => d.predictedLSTM ?? null).filter((v): v is number => v !== null)
+  const prices    = (data || []).map((d) => d.price).filter((v): v is number => v !== null)
+  const prophets  = (data || []).map((d) => d.predicted).filter((v): v is number => v !== null)
+  const lstms     = (data || []).map((d) => d.predictedLSTM ?? null).filter((v): v is number => v !== null)
   const allValues = [...prices, ...prophets, ...lstms]
   const yMin      = allValues.length ? Math.floor(Math.min(...allValues) * 0.96) : 0
   const yMax      = allValues.length ? Math.ceil(Math.max(...allValues)  * 1.02) : 100
@@ -94,7 +94,7 @@ export function PricePredictorChart({ data, height = 280, currency = '$' }: Pric
   return (
     <div aria-label="CS2 skin price chart with historical, Prophet, and LSTM forecast data" style={{ height }}>
       <ResponsiveContainer width="100%" height="100%">
-        <ComposedChart data={data} margin={{ top: 8, right: 8, bottom: 0, left: 8 }}>
+        <ComposedChart data={data || []} margin={{ top: 8, right: 8, bottom: 0, left: 8 }}>
           <defs>
             <linearGradient id="historicalGrad" x1="0" y1="0" x2="0" y2="1">
               <stop offset="5%"  stopColor="#53e076" stopOpacity={0.25} />
