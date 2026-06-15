@@ -25,6 +25,7 @@ _FALLBACK: List[NewsKeywordItem] = [
 
 
 @router.get("/", response_model=List[NewsKeywordItem])
+@router.get("", response_model=List[NewsKeywordItem], include_in_schema=False)
 async def get_keywords():
     """
     Return CS2 market keyword sentiment signals.

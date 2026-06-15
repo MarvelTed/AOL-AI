@@ -6,6 +6,7 @@ router = APIRouter()
 
 
 @router.get("/", response_model=PlayerCountResponse)
+@router.get("", response_model=PlayerCountResponse, include_in_schema=False)
 def get_player_count():
     """Return latest player count stats and 30-day history from Supabase."""
     rows = (

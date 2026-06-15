@@ -15,6 +15,7 @@ def _compute_change(latest: float, previous: float) -> float:
 
 
 @router.get("/", response_model=List[SkinListItem])
+@router.get("", response_model=List[SkinListItem], include_in_schema=False)
 def list_skins():
     """List all tracked skins with current price and 24h change."""
     items = supabase.table("items").select("id, hash_name").execute().data
@@ -46,6 +47,7 @@ def list_skins():
 
 
 @router.get("/{hash_name}", response_model=SkinDetailResponse)
+@router.get("/{hash_name}/", response_model=SkinDetailResponse)
 def get_skin_detail(hash_name: str = Path(..., description="URL-encoded hash name")):
     """Fetch 90-day history + 7-day Prophet & LSTM forecast for one skin."""
     item_res = supabase.table("items").select("id").eq("hash_name", hash_name).execute()

@@ -7,6 +7,7 @@ router = APIRouter()
 
 
 @router.get("/", response_model=List[MarketEventItem])
+@router.get("", response_model=List[MarketEventItem], include_in_schema=False)
 def get_market_events():
     """Return game update events from Supabase, most recent first."""
     rows = (

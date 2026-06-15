@@ -13,7 +13,7 @@ import { EventTimeline } from '@/components/cs2/EventTimeline'
 import { KeywordTracker } from '@/components/cs2/KeywordTracker'
 import { useMotion } from '@/components/providers/MotionProvider'
 import {
-  fetchSkins, fetchPlayerCount, fetchMarketEvents, fetchNewsKeywords,
+  fetchSkins, fetchPlayerCount, fetchMarketEvents, fetchNewsKeywords, fetchSkinById,
 } from '@/lib/api'
 import type { SkinOption, PlayerCountData, MarketEvent, NewsKeyword } from '@/lib/cs2-types'
 
@@ -36,6 +36,9 @@ export default function DashboardPage() {
   const { shouldAnimate } = useMotion()
 
   const [skins,       setSkins]       = useState<SkinOption[]>([])
+  const [featuredSkin, setFeaturedSkin] = useState<SkinOption | null>(null) // 👈 Track full structural data here
+  console.log("Featured Skin State:", featuredSkin);
+  
   const [playerCount, setPlayerCount] = useState<PlayerCountData>({
     current: 0,
     peak24h: 0,
@@ -47,6 +50,7 @@ export default function DashboardPage() {
   const [events,      setEvents]      = useState<MarketEvent[]>([])
   const [keywords,    setKeywords]    = useState<NewsKeyword[]>([])
 
+  // 1. Initial Dashboard Data Aggregation
   useEffect(() => {
     Promise.allSettled([
       fetchSkins(),
@@ -75,7 +79,27 @@ export default function DashboardPage() {
     })
   }, [])
 
-  const defaultSkin = skins[0]
+  // 2. Focused Time-Series Hydration Hook
+  useEffect(() => {
+    if (skins.length === 0) return
+
+    // Pick your first skin (e.g. AK-47 | Redline) as the featured element
+    const initialSkin = skins[0]
+    
+    fetchSkinById(initialSkin.id)
+      .then((fullSkinData) => {
+        if (fullSkinData) {
+          setFeaturedSkin(fullSkinData)
+        } else {
+          // Fallback context if prediction data array isn't built yet
+          setFeaturedSkin(initialSkin)
+        }
+      })
+      .catch((err) => {
+        console.error('Failed to load featured timeline history array:', err)
+        setFeaturedSkin(initialSkin)
+      })
+  }, [skins])
 
   return (
     <motion.div
@@ -146,22 +170,22 @@ export default function DashboardPage() {
             {/* Right: price predictor chart */}
             <motion.div variants={shouldAnimate ? itemVariants : undefined} className="md:col-span-2">
               <GlassPanel className="p-lg h-full flex flex-col">
-                {defaultSkin && (
+                {featuredSkin ? (
                   <>
                     <div className="flex items-start justify-between mb-md flex-wrap gap-2">
                       <div>
                         <h2 className="text-title-md font-semibold text-on-surface">
-                          {defaultSkin.name}
+                          {featuredSkin.name}
                           <span className="ml-2 text-label-md text-on-surface-variant font-normal">
-                            {defaultSkin.wear}
+                            {featuredSkin.wear}
                           </span>
                         </h2>
                         <div className="flex items-center gap-md mt-1">
                           <span className="text-headline-lg font-bold text-on-surface tabular-nums">
-                            ${defaultSkin.currentPrice.toFixed(2)}
+                            ${featuredSkin.currentPrice.toFixed(2)}
                           </span>
-                          <span className={defaultSkin.changePct24h >= 0 ? 'text-primary text-label-md font-medium' : 'text-red-400 text-label-md font-medium'}>
-                            {defaultSkin.changePct24h >= 0 ? '+' : ''}{defaultSkin.changePct24h}% 24h
+                          <span className={featuredSkin.changePct24h >= 0 ? 'text-primary text-label-md font-medium' : 'text-red-400 text-label-md font-medium'}>
+                            {featuredSkin.changePct24h >= 0 ? '+' : ''}{featuredSkin.changePct24h}% 24h
                           </span>
                         </div>
                       </div>
@@ -172,10 +196,26 @@ export default function DashboardPage() {
                         Full Predictor <ArrowRight className="w-3.5 h-3.5" aria-hidden="true" />
                       </Link>
                     </div>
-                    <div className="flex-1">
-                      <PricePredictorChart data={defaultSkin.priceData} height={260} />
+                    
+                    {/* The wrapper tells the chart exactly how much space it has to draw */}
+                    <div className="flex-1 w-full h-full min-h-[260px] relative mt-4">
+                      {featuredSkin.priceData && featuredSkin.priceData.length > 0 ? (
+                        <PricePredictorChart data={featuredSkin.priceData} height={260} />
+                      ) : (
+                        <div className="absolute inset-0 flex items-center justify-center">
+                          <p className="text-label-md text-on-surface-variant animate-pulse">
+                            Hydrating model trajectory array...
+                          </p>
+                        </div>
+                      )}
                     </div>
                   </>
+                ) : (
+                  <div className="flex-1 min-h-[260px] flex items-center justify-center">
+                    <p className="text-label-md text-on-surface-variant animate-pulse">
+                      Loading featured selection asset...
+                    </p>
+                  </div>
                 )}
               </GlassPanel>
             </motion.div>
@@ -185,7 +225,7 @@ export default function DashboardPage() {
           <div className="grid grid-cols-1 md:grid-cols-3 gap-md">
 
             {/* Events */}
-            <motion.div variants={shouldAnimate ? itemVariants : undefined}>
+            <motion.div variants={shouldAnimate ? itemVariants : undefined} className="h-full">
               <GlassPanel className="p-lg h-full flex flex-col">
                 <div className="flex items-center justify-between mb-lg">
                   <h2 className="text-title-md font-semibold text-on-surface">Market Events</h2>
@@ -196,7 +236,7 @@ export default function DashboardPage() {
                     All Events <ArrowRight className="w-3.5 h-3.5" aria-hidden="true" />
                   </Link>
                 </div>
-                <div className="overflow-y-auto" style={{ maxHeight: 420 }}>
+                <div className="overflow-y-auto flex-1" style={{ maxHeight: 420 }}>
                   <EventTimeline events={events} limit={4} />
                 </div>
               </GlassPanel>
